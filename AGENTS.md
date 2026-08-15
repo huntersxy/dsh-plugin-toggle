@@ -58,7 +58,7 @@ DSH 第三方插件开关：在设置页（设置 → 插件 → 「第三方插
 
 ## 发布
 
-- **CI 发布（首选，Trusted Publishing/OIDC）**：`.github/workflows/npm-publish.yml`，打 `v*` 标签自动 `npm publish --provenance`。流程：bump `package.json` 版本 → 提交 → `git tag vX.Y.Z` → `git push origin vX.Y.Z`。工作流校验 tag 版本与 package.json 一致；凭据走 npm Trusted Publishing（OIDC 短期凭证），**仓库里没有任何 token**。
+- **CI 发布（首选，Trusted Publishing/OIDC）**：`.github/workflows/publish-npm.yml`，打 `v*` 标签自动 `npm publish --provenance`。流程：bump `package.json` 版本 → 提交 → `git tag vX.Y.Z` → `git push origin vX.Y.Z`。工作流校验 tag 版本与 package.json 一致；凭据走 npm Trusted Publishing（OIDC 短期凭证），**仓库里没有任何 token**。
 - 首次配置（npm 侧一次性）：npmjs.com 包页 → Settings → Trusted Publishing → Connect a publisher → GitHub Actions → `huntersxy/dsh-plugin-toggle`，工作流 `publish-npm.yml`。未配置前 CI 发布会因未授权而失败。
 - 手动发布（CI 不可用时的备选）：`npm publish`。
   - ⚠️ 用户级 `.npmrc` 里 `npm login` 留下的旧 token 会遮蔽 `NODE_AUTH_TOKEN` —— 用项目级 `.npmrc` 指定 bypass-2FA token 发布，发完删除该文件（参见历史：曾因此卡在 403）。
