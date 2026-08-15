@@ -1,16 +1,24 @@
 name: publish-npm
 
-# 打版本标签（v*）时自动发布到 npm。
+# 打版本标签（v*）时自动发布到 npm —— 使用 npm Trusted Publishing（OIDC），
+# 不需要也不使用任何 npm token：npm 通过 GitHub OIDC 直接核验本仓库后发放短期凭证。
+#
 # 用法：bump package.json 版本 → 提交 → git tag vX.Y.Z → git push origin vX.Y.Z
 #
-# 凭据：secrets.NPM_TOKEN（仓库 Settings → Secrets and variables → Actions）。
-# 该 token 必须是 npm 的 Automation 类型（classic）或勾选了 Bypass 2FA 的
-# granular token，否则 CI 发布会因 2FA 被拒（403）。token 永不出现在本文件或代码里。
+# 首次配置（一次性，npm 侧）：
+#   https://www.npmjs.com/package/dsh-plugin-toggle → Settings → Trusted Publishing
+#   → Connect a publisher → GitHub Actions → 仓库 huntersxy/dsh-plugin-toggle，
+#   工作流名填 publish-npm.yml（或留空允许任意）→ 保存。
 
 on:
   push:
     tags:
       - 'v*'
+
+permissions:
+  contents: read
+  id-token: write      # OIDC：npm Trusted Publishing 换取短期发布凭证
+  attestations: write  # provenance（SLSA）签名写入
 
 jobs:
   publish:
@@ -33,7 +41,5 @@ jobs:
           fi
           echo "publishing dsh-plugin-toggle@${PKG_VERSION}"
 
-      - name: Publish to npm
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm (Trusted Publishing)
+        run: npm publish --provenance

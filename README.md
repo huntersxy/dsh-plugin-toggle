@@ -37,7 +37,7 @@ dsh plugin --profile web add ./dsh-plugin-toggle-0.1.0.tgz
 
 ## 发布（CI）
 
-打 `v*` 标签自动发布到 npm（GitHub Actions，凭据为仓库 Secret `NPM_TOKEN`）：
+打 `v*` 标签自动发布到 npm（GitHub Actions + **npm Trusted Publishing（OIDC）**，无需任何 token）：
 
 ```bash
 # bump package.json 版本号并提交后：
@@ -45,14 +45,13 @@ git tag v0.1.1
 git push origin v0.1.1
 ```
 
-### NPM_TOKEN 的获取与轮换
+### 一次性配置（npm 侧，约 1 分钟）
 
-npm 已于 2025 年起取消"永不过期"的 token（[官方变更说明](https://github.blog/changelog/2025-09-29-strengthening-npm-security-important-changes-to-authentication-and-token-management/)），最长约 1 年。做法：
+1. 打开 https://www.npmjs.com/package/dsh-plugin-toggle → **Settings** → **Trusted Publishing**；
+2. **Connect a publisher** → 选 **GitHub Actions** → 仓库填 `huntersxy/dsh-plugin-toggle`，工作流名填 `publish-npm.yml`（或留空允许任意）；
+3. 保存。此后打 `v*` 标签，CI 通过 OIDC 换短期凭证自动发布（带 SLSA provenance 签名），**没有 token 需要存储或轮换**。
 
-1. https://www.npmjs.com/settings/huntersxy/tokens 创建 token，选**最长期限**（约 1 年）：
-   - classic 类型选 **Automation**，或 granular 类型勾选 **Bypass 2FA**（否则 CI 发布会 403）；
-2. 仓库 Settings → Secrets and variables → Actions → New repository secret，Name 填 `NPM_TOKEN`，粘贴 token；
-3. **每年到期前轮换一次**：新建 token → 更新同名 secret，全程 1 分钟。GitHub secret 本身不设期限，过期的只是其中的 token 值。
+参考：npm 官方 [Trusted Publishing 说明](https://github.blog/changelog/2025-09-29-strengthening-npm-security-important-changes-to-authentication-and-token-management/)。
 
 ## License
 
