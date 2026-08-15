@@ -22,11 +22,11 @@ dsh plugin --profile web add ./dsh-plugin-toggle-0.1.0.tgz
 
 - **插件开关**：列出每个 profile 中非官方（第三方）插件行（bundle 栈里非 `@deepseek-ai/*` 的 bundle + 用户补丁插入的行），带版本/描述/状态，一键启用/禁用。
 - **热重载生效**：开关直接改写 profile 的 `cordis.patch.yml`（`disabled: true` 标记），DSH 监视该文件并热重载，无需重启；状态持久，重启后保持。
-- **DSH 重启按钮**：页签底部提供两段式确认的重启按钮，用于加载 profile 变更（新增插件、bundle 栈调整等）；重启以原启动命令拉起，日志落在系统临时目录（`dsh-plugin-toggle-restart-*.log`）。
+- **进程控制**：页签底部提供两段式确认的「重启 DSH」与「关闭 DSH」按钮——重启以原启动命令重新拉起进程（加载插件/配置变更）；关闭仅终止进程、不自动重启。重启日志落在系统临时目录（`dsh-plugin-toggle-restart-*.log`）。
 
 ## 工作原理
 
-- **Host**：注册自定义 Web 路由 `POST /plugin-toggle/api/<method>`（`list` / `set-enabled` / `restart`），读取各 profile 的 bundle 栈与补丁文件，改写补丁。路由仅接受本机回路 + 同源请求，重启端点另有转发头校验。
+- **Host**：注册自定义 Web 路由 `POST /plugin-toggle/api/<method>`（`list` / `set-enabled` / `restart` / `stop`），读取各 profile 的 bundle 栈与补丁文件，改写补丁。路由仅接受本机回路 + 同源请求，重启/关闭端点另有转发头校验。
 - **Client**：`__ModuleLoader__` bundle，注册到 `settings.plugins.tab`（页签 id `third-party`）。
 - 为什么不用内置 settings RPC：DSH 的 api-proxy 对第三方 settings 命名空间有写死的暴露白名单（`WEB_SETTINGS_NAMESPACES`），第三方插件无法通过该通道写入，因此本插件采用与 `dsh-better-sidebar` 一致的自定义路由通道。
 
