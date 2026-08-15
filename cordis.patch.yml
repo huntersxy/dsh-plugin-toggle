@@ -1,0 +1,7 @@
+# dsh-plugin-toggle bundle patch
+#
+# Inserts the "第三方插件开关" row. The row's own id is excluded from the
+# toggle list so the manager cannot disable itself from its own page.
+- insert:
+    - id: plugin-toggle
+      name: 'dsh-plugin-toggle'
