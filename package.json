@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-toggle",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "第三方插件开关：在设置页启用/禁用第三方插件（改写各 profile 的 cordis.patch.yml，DSH 热重载立即生效）",
   "type": "module",
   "main": "lib/index.js",
