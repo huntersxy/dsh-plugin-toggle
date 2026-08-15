@@ -38,7 +38,8 @@ DSH 第三方插件开关：在设置页（设置 → 插件 → 「第三方插
 3. **补丁文件三种形态都要支持**：`[]`（空数组）、多行方括号数组（`[...]`）、裸列表（`- item` 行，无方括号）。`addDisable` 按"文件是否以顶层 `]` 结尾"决定"插到 `]` 前"还是"直接追加"；`removeDisable` 归零后兜底写 `[]\n`（空/仅注释文件解析为"无"，loader 要求顶层数组）。**历史上曾因在裸列表后追加孤立 `]` 写坏补丁导致 boot 崩溃**。
 4. **settings wire 对第三方封闭**：api-proxy 的 `WEB_SETTINGS_NAMESPACES` 是写死的暴露白名单，第三方 settings 命名空间经 `api.settings.mutate` 必被拒（`settings-not-exposed`）。本插件因此走自定义 Web 路由通道，**不要改成 settings 通道**。
 5. **client bundle 的 load id 必须等于包名**（boot graph 条目 id 即包名），否则 loader 匹配不上（`bundle loaded without registering "<id>"`）。
-6. **重启机制**（`scheduleRestart`）：`dshArgv()` 重建启动命令（`process.argv[1]` 命中 `bin.(js|ts)|dsh$` 时用 execPath+绝对入口、cwd 锚到入口目录以保持 tsx/esm 解析；否则裸 `dsh` via shell）→ 派分离 helper 等 1.5s 以相同命令拉起替代进程（日志 `%TEMP%/dsh-plugin-toggle-restart-*.log`）→ 500ms 后 `process.kill(process.pid, 'SIGTERM')`。`restart` 处理器必须先返回响应再自杀。
+6. **重启机制**（`scheduleRestart`）：`dshArgv()` 重建启动命令（`process.argv[1]` 命中脚本形态（`bin.(js|ts|mjs|cjs)` 或任意 `js/ts/mjs/cjs`）时用 execPath+绝对入口、cwd 锚到入口目录以保持 tsx/esm 解析；兜底裸 `dsh` via shell 仅限极端情况）→ 派分离 helper 等 1.5s 以相同命令拉起替代进程（日志 `%TEMP%/dsh-plugin-toggle-restart-*.log`）→ 500ms 后 `process.kill(process.pid, 'SIGTERM')`。`restart` 处理器必须先返回响应再自杀。
+   - **Windows 弹窗教训**：替代进程与 helper 都必须 `windowsHide: true`（CREATE_NO_WINDOW → 隐藏控制台）。否则服务器无控制台，其子进程（沙盒 spawner 用 0 创建标志、"共享宿主控制台"）会各自新建控制台窗口——表现为"每条工具命令弹一个命令行窗口"。曾因 `dshArgv` 落入 `cmd /c dsh` 兜底分支（`shell: true` + detached）触发此问题，err 日志留下 DEP0190 警告。
 7. **信任校验**：路由级 `sameOrigin`；`restart` 额外要求 `req.socket.remoteAddress` 为回路地址且无 `forwarded`/`x-forwarded-for`/`x-real-ip`。
 
 ## 测试
