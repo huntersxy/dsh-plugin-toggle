@@ -21,7 +21,6 @@ DSH 第三方插件开关：在设置页（设置 → 插件 → 「第三方插
 - API：`POST /plugin-toggle/api/<method>`，响应统一 `{ ok: true, value }` 或 `{ ok: false, error: { code, message } }`。
   - `list`：枚举 `DSH_HOME/profiles/*`，返回每个 profile 的可管理第三方行 —— bundle 栈中**非 `@deepseek-ai/*`** 的 bundle（从该 bundle 的 `cordis.patch.yml` 的 insert 块解析行 id，并读其 package.json 拿版本/描述）+ 用户补丁插入的行。字段：`id`（patch 行 id）/`name`/`version`/`description`/`source`（bundle|user）/`enabled`（用户补丁中有无该行的 `disabled: true`）。
   - `set-enabled`：校验 profile/id 白名单后改写对应 profile 的 `cordis.patch.yml` —— 禁用 = 追加 `- id: <行id>` + `disabled: true`；启用 = 移除该条目。幂等。
-  - `restart`：信任门槛（回路地址 + 同源 Origin + 无转发头）通过后调度自重启。
 - 写补丁用 `node:fs` 直写（不经 ctx.fs / 沙盒）；`watchUserPatches` 监视补丁文件并热重载，立即生效。
 
 ### Client（lib/client.js）
@@ -38,18 +37,16 @@ DSH 第三方插件开关：在设置页（设置 → 插件 → 「第三方插
 3. **补丁文件三种形态都要支持**：`[]`（空数组）、多行方括号数组（`[...]`）、裸列表（`- item` 行，无方括号）。`addDisable` 按"文件是否以顶层 `]` 结尾"决定"插到 `]` 前"还是"直接追加"；`removeDisable` 归零后兜底写 `[]\n`（空/仅注释文件解析为"无"，loader 要求顶层数组）。**历史上曾因在裸列表后追加孤立 `]` 写坏补丁导致 boot 崩溃**。
 4. **settings wire 对第三方封闭**：api-proxy 的 `WEB_SETTINGS_NAMESPACES` 是写死的暴露白名单，第三方 settings 命名空间经 `api.settings.mutate` 必被拒（`settings-not-exposed`）。本插件因此走自定义 Web 路由通道，**不要改成 settings 通道**。
 5. **client bundle 的 load id 必须等于包名**（boot graph 条目 id 即包名），否则 loader 匹配不上（`bundle loaded without registering "<id>"`）。
-6. **重启机制**（`scheduleRestart`）：`dshArgv()` 重建启动命令（`process.argv[1]` 命中脚本形态（`bin.(js|ts|mjs|cjs)` 或任意 `js/ts/mjs/cjs`）时用 execPath+绝对入口、cwd 锚到入口目录以保持 tsx/esm 解析；兜底裸 `dsh` via shell 仅限极端情况）→ 派分离 helper 等 1.5s 以相同命令拉起替代进程（日志 `%TEMP%/dsh-plugin-toggle-restart-*.log`）→ 500ms 后 `process.kill(process.pid, 'SIGTERM')`。`restart` 处理器必须先返回响应再自杀。
-   - **Windows 弹窗教训**：替代进程与 helper 都必须 `windowsHide: true`（CREATE_NO_WINDOW → 隐藏控制台）。否则服务器无控制台，其子进程（沙盒 spawner 用 0 创建标志、"共享宿主控制台"）会各自新建控制台窗口——表现为"每条工具命令弹一个命令行窗口"。曾因 `dshArgv` 落入 `cmd /c dsh` 兜底分支（`shell: true` + detached）触发此问题，err 日志留下 DEP0190 警告。
-7. **信任校验**：路由级 `sameOrigin`；`restart` 额外要求 `req.socket.remoteAddress` 为回路地址且无 `forwarded`/`x-forwarded-for`/`x-real-ip`。
+6. **信任校验**：路由级 `sameOrigin`（仅接受同源 POST）。曾有过 `restart`/`stop` 进程控制端点（已移除），其额外要求回路地址 + 无转发头，若未来恢复请一并恢复该门槛。
+7. **刷新按钮是纯客户端**：`window.location.reload()`，不经过 Host；进程控制（重启/关闭）已按用户要求移除，勿重新加回。
 
 ## 测试
 
 当前测试脚本在工作区（`E:\workspace`），未随包分发：
 
 - `pm-patch-logic-test.js`：补丁文本变换纯逻辑（三种形态、禁用/启用往返、无孤立 `]`）。
-- `pm-real-e2e.mjs`：客户端 bundle 注册形状 + 用假 ctx/req 驱动真实 Host 代码，对**真实 DSH_HOME** 跑 list / set-enabled 往返 / restart 信任门槛。
+- `pm-real-e2e.mjs`：客户端 bundle 注册形状 + 用假 ctx/req 驱动真实 Host 代码，对**真实 DSH_HOME** 跑 list / set-enabled 往返 / 错误路径。
   - ⚠️ 有真实副作用：会改写 `profiles/web/cordis.patch.yml`（结束时保持 better-sidebar 禁用）。
-  - ⚠️ 不要在 e2e 里调 restart 快乐路径（会调度真重启并杀掉测试进程）；只测拒绝路径。
 - 便携版应把 DSH_HOME 指到临时目录再跑。
 
 改动后的同步与生效：
