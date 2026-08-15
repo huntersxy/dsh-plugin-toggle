@@ -58,7 +58,9 @@ DSH 第三方插件开关：在设置页（设置 → 插件 → 「第三方插
 
 ## 发布
 
-- npm：`dsh-plugin-toggle@0.1.0`（已发布）。发新版：改 `package.json` 版本 → `npm publish`。
+- **CI 发布（首选）**：`.github/workflows/npm-publish.yml`，打 `v*` 标签自动 `npm publish`。流程：bump `package.json` 版本 → 提交 → `git tag vX.Y.Z` → `git push origin vX.Y.Z`。工作流校验 tag 版本与 package.json 一致；凭据为仓库 Secret `NPM_TOKEN`（永不出现在代码里）。
+- `NPM_TOKEN`：npm 已无"永不过期"token（2025 政策收紧），最长约 1 年。用 Automation（classic）或 Bypass 2FA（granular）的 token 存入 secret，**每年轮换一次**（新 token → 更新同名 secret）。
+- 手动发布（CI 不可用时的备选）：`npm publish`。
   - ⚠️ 用户级 `.npmrc` 里 `npm login` 留下的旧 token 会遮蔽 `NODE_AUTH_TOKEN` —— 用项目级 `.npmrc` 指定 bypass-2FA token 发布，发完删除该文件（参见历史：曾因此卡在 403）。
 - 安装：`dsh plugin --profile web add dsh-plugin-toggle`。
 - GitHub：huntersxy/dsh-plugin-toggle（本仓库）。

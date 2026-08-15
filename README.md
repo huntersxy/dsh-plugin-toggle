@@ -35,6 +35,25 @@ dsh plugin --profile web add ./dsh-plugin-toggle-0.1.0.tgz
 - 列表来自 profile 补丁文件的静态解析：只管理 bundle 栈中非 `@deepseek-ai/*` 的 bundle 行与用户补丁插入的行；`include:` 运行时前缀会自动归一化。
 - 修改 bundle 栈（安装/卸载插件）需要重启生效，可用页签里的重启按钮完成。
 
+## 发布（CI）
+
+打 `v*` 标签自动发布到 npm（GitHub Actions，凭据为仓库 Secret `NPM_TOKEN`）：
+
+```bash
+# bump package.json 版本号并提交后：
+git tag v0.1.1
+git push origin v0.1.1
+```
+
+### NPM_TOKEN 的获取与轮换
+
+npm 已于 2025 年起取消"永不过期"的 token（[官方变更说明](https://github.blog/changelog/2025-09-29-strengthening-npm-security-important-changes-to-authentication-and-token-management/)），最长约 1 年。做法：
+
+1. https://www.npmjs.com/settings/huntersxy/tokens 创建 token，选**最长期限**（约 1 年）：
+   - classic 类型选 **Automation**，或 granular 类型勾选 **Bypass 2FA**（否则 CI 发布会 403）；
+2. 仓库 Settings → Secrets and variables → Actions → New repository secret，Name 填 `NPM_TOKEN`，粘贴 token；
+3. **每年到期前轮换一次**：新建 token → 更新同名 secret，全程 1 分钟。GitHub secret 本身不设期限，过期的只是其中的 token 值。
+
 ## License
 
 MIT
