@@ -21,7 +21,7 @@ dsh plugin --profile web add ./dsh-plugin-toggle-0.1.0.tgz
 ## 功能
 
 - **插件开关**：列出每个 profile 中非官方（第三方）插件行（bundle 栈里非 `@deepseek-ai/*` 的 bundle + 用户补丁插入的行），带版本/描述/状态，一键启用/禁用。
-- **热重载生效**：开关直接改写 profile 的 `cordis.patch.yml`（`disabled: true` 标记），DSH 监视该文件并热重载，无需重启；状态持久，重启后保持。
+- **热重载生效**：开关直接改写 profile 的 `cordis.patch.yml`（`disabled: true` 标记），DSH 监视该文件并热重载，无需重启；状态持久，重启后保持。⚠ 若插件的 bundle 补丁含配置/表达式行（非纯 insert），热禁用可能不完整——列表会显示 ⚠ 提示，禁用时也会提醒"重启进程后完全生效"。
 - **刷新页面**：页签底部提供「刷新页面」按钮（纯客户端 `location.reload()`），修改插件/配置后刷新 Web 界面。
 
 ## 工作原理

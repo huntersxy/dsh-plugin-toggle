@@ -19,8 +19,9 @@ DSH 第三方插件开关：在设置页（设置 → 插件 → 「第三方插
 - 插件导出：**命名导出** `export { apply, inject }`，`inject = ['webServer']`（硬依赖，见陷阱 1/2）。
 - 通过 `ctx.webServer.register({ kind: 'prefix', path: '/plugin-toggle/api', handler })` 挂自定义路由。
 - API：`POST /plugin-toggle/api/<method>`，响应统一 `{ ok: true, value }` 或 `{ ok: false, error: { code, message } }`。
-  - `list`：枚举 `DSH_HOME/profiles/*`，返回每个 profile 的可管理第三方行 —— bundle 栈中**非 `@deepseek-ai/*`** 的 bundle（从该 bundle 的 `cordis.patch.yml` 的 insert 块解析行 id，并读其 package.json 拿版本/描述）+ 用户补丁插入的行。字段：`id`（patch 行 id）/`name`/`version`/`description`/`source`（bundle|user）/`enabled`（用户补丁中有无该行的 `disabled: true`）。
-  - `set-enabled`：校验 profile/id 白名单后改写对应 profile 的 `cordis.patch.yml` —— 禁用 = 追加 `- id: <行id>` + `disabled: true`；启用 = 移除该条目。幂等。
+  - `list`：枚举 `DSH_HOME/profiles/*`，返回每个 profile 的可管理第三方行 —— bundle 栈中**非 `@deepseek-ai/*`** 的 bundle（从该 bundle 的 `cordis.patch.yml` 的 insert 块解析行 id，并读其 package.json 拿版本/描述）+ 用户补丁插入的行。字段：`id`（patch 行 id）/`name`/`version`/`description`/`source`（bundle|user）/`enabled`/`hotReady`（bundle 补丁是否为纯 insert——含配置/表达式行的补丁热禁用可能不完整，需重启后由 bundle 层完全生效；客户端据此显示 ⚠ 提示）。
+  - `hotReady` 判定：`isPlainInsertPatch()` —— 去注释后顶层只能有 `- insert:` 块、且无 `!!js` 表达式；任一顶层 `- id: ...`/其他行即视为非纯 insert（热禁用不可靠）。
+  - `set-enabled`：校验 profile/id 白名单后改写对应 profile 的 `cordis.patch.yml` —— 禁用 = 追加 `- id: <行id>` + `disabled: true`；启用 = 移除该条目。幂等。对 `hotReady === false` 的行返回 `warnRestart: true`，客户端提示"热禁用可能不完整，重启后完全生效"。
 - 写补丁用 `node:fs` 直写（不经 ctx.fs / 沙盒）；`watchUserPatches` 监视补丁文件并热重载，立即生效。
 
 ### Client（lib/client.js）
